@@ -195,6 +195,10 @@ func (f *Fetcher[V]) pullLoop(forceUpdate bool) {
 	for {
 		select {
 		case <-timer.C:
+			if forceUpdate {
+				log.Warnln("[Provider] %s not updated for a long time, force refresh", f.Name())
+				forceUpdate = false
+			}
 			f.updateWithLog()
 			interval := f.interval
 			if attempt := f.backoff.Attempt(); attempt > 0 { // f.Update() was failed, decrease the interval from backoff to achieve fast retry
@@ -236,7 +240,7 @@ func (f *Fetcher[V]) updateCallback(path string) {
 func (f *Fetcher[V]) updateWithLog() {
 	_, same, err := f.Update()
 	if err != nil {
-		log.Errorln("[Provider] %s pull error: %s", f.Name(), err.Error())
+		log.Warnln("[Provider] %s pull error: %s", f.Name(), err.Error())
 		return
 	}
 

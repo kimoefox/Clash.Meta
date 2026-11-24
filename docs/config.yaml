@@ -1114,6 +1114,24 @@ proxies: # socks5
       #   client-fingerprint: chrome
 
 
+  # x365（仅支持 TCP）
+  - name: "x365"
+    type: x365
+    server: server
+    port: 443
+    uuid: uuid
+    # alpn: [h2] # 默认使用h2，如果开启http1.1模式需要设置alpn: [http/1.1]
+    servername: xxx.com # REALITY servername
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: xxx
+      short-id: xxx
+    xhttp-opts: # 字段同 vless 的 xhttp-opts，但 mode 只支持 stream-one（默认），因此不能使用 download-settings
+      path: "/"
+      host: xxx.com
+      # headers:
+      #   User-Agent: ... # 默认使用服务端要求的 X365 客户端 UA，一般无需修改
+
   # Trojan
   - name: "trojan"
     type: trojan
@@ -1731,6 +1749,32 @@ proxies: # socks5
     # jls-opts: # 使用 sni 作为 JLS SNI
     #   username: jls-user
     #   password: jls-password
+
+  # miu
+  - name: miu
+    type: miu
+    server: 1.2.3.4
+    port: 443
+    psk: "<your psk>" # 与服务端逐字符相同的字符串，至少 16 个字符
+    # 默认按 PSK 派生初始整形方案；服务端仍可下发覆盖，并在当前客户端内记忆。
+    # padding-scheme: ["stop=2", "0=30-30", "1=128-160"] # 可选初始覆盖
+    udp: true
+    tls: true # 可省略，miu 始终跑在 TLS 之上
+    # sni: "example.com" # 也可以写成 servername
+    # skip-cert-verify: true
+    # fingerprint: xxxx # 证书指纹
+    # client-fingerprint: chrome
+    # alpn:
+    #   - h2
+    #   - http/1.1
+    # ech-opts:
+    #   enable: true # 必须手动开启
+    #   config: base64_encoded_config
+    # reality-opts: # 写了它外层就是 REALITY，此时必须同时写 client-fingerprint
+    #   public-key: xxxx
+    #   short-id: xxxx
+    # idle-session-timeout: 30 # seconds
+    # min-idle-session: 2
 
   # trusttunnel
   - name: trusttunnel
@@ -2591,6 +2635,39 @@ listeners:
     ### 注意，anytls listener, 如果 "allow-insecure" 不为 true, 至少需要填写 “certificate和private-key” 或 “shadow-tls” 或 “res-tls” 或 “jls-config” 的其中一项 ###
     # allow-insecure: false # 是否允许不开启tls加密（注意：仅用于有 nginx, caddy 前置的情况）
     # padding-scheme: "" # https://github.com/anytls/anytls-go/blob/main/docs/protocol.md#cmdupdatepaddingscheme
+
+  - name: miu-in-1
+    type: miu
+    port: 10818 # 支持使用ports格式，例如200,302 or 200,204,401-429,501-503
+    listen: 0.0.0.0
+    # routing-mark: 0 # 为监听socket设置routing-mark（仅支持linux）
+    users: # 用户名: psk，psk 至少 16 个字符
+      username1: psk-of-at-least-16-chars-1
+      username2: psk-of-at-least-16-chars-2
+    # "certificate和private-key" 与 "reality-config" 必须且只能填写其中一项
+    certificate: ./server.crt # 证书 PEM 格式，或者 证书的路径
+    private-key: ./server.key
+    # 下面两项为mTLS配置项，如果client-auth-type设置为 "verify-if-given" 或 "require-and-verify" 则client-auth-cert必须不为空
+    # client-auth-type: "" # 可选值：""、"request"、"require-any"、"verify-if-given"、"require-and-verify"
+    # client-auth-cert: string # 证书 PEM 格式，或者 证书的路径
+    # 如果填写则开启ech（可由 mihomo generate ech-keypair <明文域名> 生成）
+    # ech-key: |
+    #   -----BEGIN ECH KEYS-----
+    #   ACATwY30o/RKgD6hgeQxwrSiApLaCgU+HKh7B6SUrAHaDwBD/g0APwAAIAAgHjzK
+    #   madSJjYQIf9o1N5GXjkW4DEEeb17qMxHdwMdNnwADAABAAEAAQACAAEAAwAIdGVz
+    #   dC5jb20AAA==
+    #   -----END ECH KEYS-----
+    # reality-config:
+    #   dest: test.com:443
+    #   private-key: jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0 # 可由 mihomo generate reality-keypair 命令生成
+    #   short-id:
+    #     - 0123456789abcdef
+    #   server-names:
+    #     - test.com
+    # padding-scheme: "" # AnyTLS 文本格式的初始整形方案
+    # 仅证书模式：不是客户端的连接（探测等）交给这个 Web 服务器，连同已读到的字节；不配置时读掉丢弃，60 秒后关闭
+    # fallback: 127.0.0.1:8080
+    # alpn: ["http/1.1"] # 仅证书模式，默认 http/1.1；只写 fallback 支持的
 
   - name: mieru-in-1
     type: mieru

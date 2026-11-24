@@ -86,7 +86,6 @@ func ListenPacket(ctx context.Context, network, address string, rAddrPort netip.
 	return lc.ListenPacket(ctx, network, address)
 }
 
-// Listen creates a TCP listener with the same socket policy as ListenPacket.
 func Listen(ctx context.Context, network, address string, options ...Option) (net.Listener, error) {
 	lc, address, err := listenConfig(network, address, netip.AddrPort{}, applyOptions(options...))
 	if err != nil {
@@ -100,7 +99,7 @@ func listenConfig(network, address string, rAddrPort netip.AddrPort, opt option)
 	if opt.addrReuse {
 		addrReuseToListenConfig(lc)
 	}
-	if DefaultSocketHook != nil { // ignore interfaceName, routingMark when DefaultSocketHook not null (in CMFA)
+	if DefaultSocketHook != nil {
 		socketHookToListenConfig(lc)
 	} else {
 		if opt.interfaceName == "" {
@@ -112,7 +111,6 @@ func listenConfig(network, address string, rAddrPort netip.AddrPort, opt option)
 			}
 		}
 		if rAddrPort.Addr().Unmap().IsLoopback() || listenAddressIsLoopback(address) {
-			// avoid "The requested address is not valid in its context."
 			opt.interfaceName = ""
 		}
 		if opt.interfaceName != "" {

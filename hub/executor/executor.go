@@ -463,6 +463,12 @@ func patchSelectGroup(proxies map[string]C.Proxy) {
 			continue
 		}
 
+		if outbound.Type() == C.URLTest {
+			cachefile.Cache().SetSelected(name, "")
+			selector.ForceSet("")
+			continue
+		}
+
 		selector.ForceSet(selected)
 	}
 }

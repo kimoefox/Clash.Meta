@@ -55,6 +55,9 @@ const (
 	ZeroTier
 	EasyTier
 	GostRelay
+	X365
+	Miu
+	Ninja
 )
 
 const (
@@ -62,8 +65,9 @@ const (
 	DefaultUDPTimeout = dialer.DefaultUDPTimeout
 	DefaultDropTime   = 12 * DefaultTCPTimeout
 	DefaultTLSTimeout = DefaultTCPTimeout
-	DefaultTestURL    = "https://www.gstatic.com/generate_204"
 )
+
+var DefaultTestURL = "https://www.gstatic.com/generate_204"
 
 var ErrNotSupport = errors.New("no support")
 
@@ -242,6 +246,12 @@ func (at AdapterType) String() string {
 		return "EasyTier"
 	case GostRelay:
 		return "GostRelay"
+	case X365:
+		return "X365"
+	case Miu:
+		return "Miu"
+	case Ninja:
+		return "Ninja"
 	case Relay:
 		return "Relay"
 	case Selector:
@@ -302,6 +312,17 @@ func (s *packetAdapter) Metadata() *Metadata {
 // Key is a SNAT key
 func (s *packetAdapter) Key() string {
 	return s.key
+}
+
+type PacketRejector interface {
+	Reject() error
+}
+
+func (s *packetAdapter) Reject() error {
+	if rejector, ok := s.UDPPacket.(PacketRejector); ok {
+		return rejector.Reject()
+	}
+	return nil
 }
 
 func NewPacketAdapter(packet UDPPacket, metadata *Metadata) PacketAdapter {

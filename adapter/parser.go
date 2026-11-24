@@ -125,6 +125,13 @@ func ParseProxy(mapping map[string]any, options ...ProxyOption) (C.Proxy, error)
 			break
 		}
 		proxy, err = outbound.NewGostRelay(*relayOption)
+	case "x365":
+		x365Option := &outbound.X365Option{BasicOption: basicOption}
+		err = decoder.Decode(mapping, x365Option)
+		if err != nil {
+			break
+		}
+		proxy, err = outbound.NewX365(*x365Option)
 	case "direct":
 		directOption := &outbound.DirectOption{BasicOption: basicOption}
 		err = decoder.Decode(mapping, directOption)
@@ -174,6 +181,13 @@ func ParseProxy(mapping map[string]any, options ...ProxyOption) (C.Proxy, error)
 			break
 		}
 		proxy, err = outbound.NewAnyTLS(*anytlsOption)
+	case "miu":
+		miuOption := &outbound.MiuOption{BasicOption: basicOption}
+		err = decoder.Decode(mapping, miuOption)
+		if err != nil {
+			break
+		}
+		proxy, err = outbound.NewMiu(*miuOption)
 	case "sudoku":
 		sudokuOption := &outbound.SudokuOption{BasicOption: basicOption}
 		err = decoder.Decode(mapping, sudokuOption)
@@ -223,6 +237,13 @@ func ParseProxy(mapping map[string]any, options ...ProxyOption) (C.Proxy, error)
 			break
 		}
 		proxy, err = outbound.NewEasyTier(*easyTierOption)
+	case "ninja":
+		ninjaOption := &outbound.NinjaOption{BasicOption: basicOption}
+		err = decoder.Decode(mapping, ninjaOption)
+		if err != nil {
+			break
+		}
+		proxy, err = outbound.NewNinja(*ninjaOption)
 	default:
 		return nil, fmt.Errorf("unsupport proxy type: %s", proxyType)
 	}

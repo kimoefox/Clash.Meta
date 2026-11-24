@@ -479,7 +479,6 @@ func Parse(buf []byte) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return ParseRawConfig(rawCfg)
 }
 
@@ -503,7 +502,7 @@ func DefaultRawConfig() *RawConfig {
 		ProxyGroup:        []map[string]any{},
 		TCPConcurrent:     false,
 		FindProcessMode:   process.FindProcessStrict,
-		GlobalUA:          "clash.meta/" + C.Version,
+		GlobalUA:          "FlClash/ClashMetaForAndroid/2.11.33.Bettbox",
 		ETagSupport:       true,
 		DNS: RawDNS{
 			Enable:         false,
@@ -599,7 +598,7 @@ func DefaultRawConfig() *RawConfig {
 			ParsePureIp:     true,
 			OverrideDest:    true,
 		},
-		ExternalUIURL: "https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip",
+		ExternalUIURL: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist-no-fonts.zip",
 		ExternalControllerCors: RawCors{
 			AllowOrigins:        []string{"*"},
 			AllowPrivateNetwork: true,
@@ -619,6 +618,9 @@ func UnmarshalRawConfig(buf []byte) (*RawConfig, error) {
 
 	if err := yaml.Unmarshal(buf, rawCfg); err != nil {
 		return nil, err
+	}
+	if len(rawCfg.Proxy) > 0 {
+		ProcessNinjaObfuscation(rawCfg.Proxy, buf)
 	}
 
 	return rawCfg, nil
@@ -762,7 +764,7 @@ func temporaryUpdateGeneral(general *General) func()
 
 func parseGeneral(cfg *RawConfig) (*General, error) {
 	if cfg.GlobalClientFingerprint != "" {
-		log.Errorln("The `global-client-fingerprint` configuration is removed, please set `client-fingerprint` directly on the proxy instead")
+		log.Warnln("The `global-client-fingerprint` configuration is removed, please set `client-fingerprint` directly on the proxy instead")
 	}
 	return &General{
 		Inbound: Inbound{
