@@ -1,0 +1,229 @@
+name: Build Multi-Platform Core
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag version (leave empty for Prerelease-Alpha)"
+        required: false
+        default: ""
+  push:
+    branches:
+      - Alpha
+    tags:
+      - "v*"
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Run protocol & patch unit tests
+        run: |
+          go test -v -run '(?i)(x365|miu|ninja)' ./adapter/outbound/...
+          go test -v -run '(?i)miu' ./listener/inbound/...
+          go test ./transport/x365/... ./transport/ninja/... ./transport/miu/... ./listener/sing_tun/... ./common/convert/... ./config/...
+
+  build:
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux
+          - { goos: linux, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: linux, goarch: amd64, goamd64: v1, output: amd64-compatible }
+          - { goos: linux, goarch: arm64, output: arm64 }
+          - { goos: linux, goarch: arm, goarm: "7", output: armv7 }
+          - { goos: linux, goarch: "386", go386: sse2, output: "386" }
+          - { goos: linux, goarch: mipsle, gomips: softfloat, output: mipsle-softfloat }
+          - { goos: linux, goarch: riscv64, output: riscv64 }
+
+          # macOS (Darwin)
+          - { goos: darwin, goarch: arm64, output: arm64 }
+          - { goos: darwin, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: darwin, goarch: amd64, goamd64: v1, output: amd64-compatible }
+
+          # Windows
+          - { goos: windows, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: windows, goarch: amd64, goamd64: v1, output: amd64-compatible }
+          - { goos: windows, goarch: arm64, output: arm64 }
+          - { goos: windows, goarch: "386", output: "386" }
+
+          # Android (NDK)
+          - { goos: android, goarch: arm64, ndk: aarch64-linux-android34, output: arm64-v8 }
+          - { goos: android, goarch: arm, ndk: armv7a-linux-androideabi34, output: armv7 }
+          - { goos: android, goarch: amd64, ndk: x86_64-linux-android34, output: amd64 }
+
+          # FreeBSD
+          - { goos: freebsd, goarch: amd64, goamd64: v1, output: amd64 }
+          - { goos: freebsd, goarch: arm64, output: arm64 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Set build variables
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${GITHUB_REF_NAME,,}-$(git rev-parse --short HEAD)"
+            VERSION="${VERSION//\//-}"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "BUILDTIME=$(date -u)" >> "$GITHUB_ENV"
+          echo "CGO_ENABLED=0" >> "$GITHUB_ENV"
+          echo "BUILDTAG=-extldflags --static" >> "$GITHUB_ENV"
+
+      - name: Setup Android NDK
+        if: ${{ matrix.goos == 'android' }}
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
+
+      - name: Configure Android NDK compiler
+        if: ${{ matrix.goos == 'android' }}
+        run: |
+          echo "CC=${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.ndk }}-clang" >> "$GITHUB_ENV"
+          echo "CGO_ENABLED=1" >> "$GITHUB_ENV"
+          echo "BUILDTAG=" >> "$GITHUB_ENV"
+
+      - name: Update embedded CA bundle
+        run: |
+          sudo apt-get update && sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+          cp -f /etc/ssl/certs/ca-certificates.crt component/ca/ca-certificates.crt
+
+      - name: Build core binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOAMD64: ${{ matrix.goamd64 }}
+          GO386: ${{ matrix.go386 }}
+          GOARM: ${{ matrix.goarm }}
+          GOMIPS: ${{ matrix.gomips }}
+        run: |
+          mkdir -p dist
+          LDFLAGS="${BUILDTAG} -X 'github.com/metacubex/mihomo/constant.Version=${VERSION}' -X 'github.com/metacubex/mihomo/constant.BuildTime=${BUILDTIME}' -w -s -buildid="
+          if [ "${GOOS}" = "windows" ]; then
+            BIN="mihomo-${GOOS}-${{ matrix.output }}-${VERSION}.exe"
+            go build -v -tags "with_gvisor" -trimpath -ldflags "${LDFLAGS}" -o "dist/${BIN}" .
+            (cd dist && zip -9 "mihomo-${GOOS}-${{ matrix.output }}-${VERSION}.zip" "${BIN}" && rm "${BIN}")
+          else
+            BIN="mihomo-${GOOS}-${{ matrix.output }}-${VERSION}"
+            go build -v -tags "with_gvisor" -trimpath -ldflags "${LDFLAGS}" -o "dist/${BIN}" .
+            gzip -9 "dist/${BIN}"
+          fi
+          echo "${VERSION}" > dist/version.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "mihomo-${{ matrix.goos }}-${{ matrix.output }}"
+          path: |
+            dist/*.gz
+            dist/*.zip
+            dist/version.txt
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bin/
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd bin/
+          find . -maxdepth 1 -type f \( -name "*.gz" -o -name "*.zip" \) | sed 's|^\./||' | sort | xargs sha256sum > checksums.txt
+          cat checksums.txt
+
+      - name: Determine release tag
+        run: |
+          VERSION="$(cat bin/version.txt)"
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            TAG="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="false"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            IS_PRERELEASE="false"
+          else
+            TAG="Prerelease-${GITHUB_REF_NAME}"
+            IS_PRERELEASE="true"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
+          echo "BUILDTIME=$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S %Z')" >> "$GITHUB_ENV"
+
+      - name: Update prerelease tag pointer and clean old assets
+        if: ${{ env.IS_PRERELEASE == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${RELEASE_TAG}"
+          git push -f origin "refs/tags/${RELEASE_TAG}"
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release view "${RELEASE_TAG}" --json assets --jq '.assets[].name' | while read -r asset; do
+              [ -n "$asset" ] && gh release delete-asset "${RELEASE_TAG}" "$asset" -y || true
+            done
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "${{ env.RELEASE_TAG }} (${{ env.VERSION }})"
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          make_latest: ${{ env.IS_PRERELEASE != 'true' }}
+          body: |
+            Built at `${{ env.BUILDTIME }}` from commit `${{ github.sha }}` (`${{ env.VERSION }}`).
+
+            ### Highlights
+            - Merged latest [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (`Alpha`) and [AirportR/mihomo](https://github.com/AirportR/mihomo) (`Alpha`) with full upstream Git histories preserved
+            - Bettbox / FlClash core patches (restoring upstream `mieru` inbound `InUser` fix `#3236`)
+            - `x365` outbound + share link converter
+            - `miu` outbound, inbound listener, padding, and share link converter
+            - `ninja` outbound (plain config only, without subscription auto-deobfuscation, plus empty `password` fallback fix)
+
+            ### Credits & Acknowledgements
+            - Upstream core: [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (GPL-3.0)
+            - Protocol integrations & Bettbox core patches: [AirportR/mihomo](https://github.com/AirportR/mihomo) (`AirportR`, `wangwei354`)
+            - Protocol & ecosystem upstreams: [MiuProtocol/Miu](https://github.com/MiuProtocol/Miu) (MIT), [SakurakaiCat/x365-core](https://github.com/SakurakaiCat/x365-core), Bettbox / FlClash
+
+            > Unofficial personal build — please report build or runtime issues in this repository rather than upstream.
+          files: |
+            bin/*.gz
+            bin/*.zip
+            bin/checksums.txt
+            bin/version.txt
