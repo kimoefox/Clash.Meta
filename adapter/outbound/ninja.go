@@ -191,9 +191,13 @@ func NewNinja(option NinjaOption) (*Ninja, error) {
 		Base:   NewBase(BaseOption{Type: C.Ninja, Name: option.Name, Addr: addr, UDP: false}),
 		option: &option,
 	}
+	password := option.Password
+	if password == "" {
+		password = option.NodePassword
+	}
 	n.cfg = &ninja.Config{
 		Method:       method,
-		Password:     option.Password,
+		Password:     password,
 		NodePassword: option.NodePassword,
 	}
 	n.dialer = option.NewDialer(n.DialOptions())
