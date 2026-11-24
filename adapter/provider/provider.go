@@ -18,6 +18,7 @@ import (
 	"github.com/metacubex/mihomo/component/resource"
 	C "github.com/metacubex/mihomo/constant"
 	P "github.com/metacubex/mihomo/constant/provider"
+	"github.com/metacubex/mihomo/transport/ninja"
 	"github.com/metacubex/mihomo/tunnel/statistic"
 
 	"github.com/dlclark/regexp2"
@@ -387,6 +388,8 @@ func NewProxiesParser(pdName string, tunnel C.Tunnel, filter string, excludeFilt
 				return nil, fmt.Errorf("%w, %w", err, err1)
 			}
 			schema.Proxies = proxies
+		} else if len(schema.Proxies) > 0 {
+			ninja.ProcessObfuscation(schema.Proxies, buf)
 		}
 
 		if schema.Proxies == nil {

@@ -19,7 +19,7 @@ This repository stands on the work of the following upstream projects and contri
 On top of merging the latest `MetaCubeX/mihomo` (`Alpha`) and `AirportR/mihomo` (`Alpha`) trees, this repository adds the following targeted adjustments:
 
 1. **Restored upstream `mieru` inbound fix (`#3236`)**: Re-applied `inbound.WithInUser` metadata for both TCP and UDP in `listener/mieru/server.go`, which was accidentally overwritten during Bettbox patch vendoring.
-2. **Plain `ninja` protocol only**: Removed `config/ninja_obf.go` and the global `ProcessNinjaObfuscation` hook in `config/config.go` to keep YAML config parsing free of implicit subscription deobfuscation and `#!PASS-INFO` comment injection.
+2. **Hardened `ninja` subscription deobfuscation**: Restored `AirportR`'s `mihomo-ninja` subscription deobfuscation (`transport/ninja/obf.go`) with strict `#!PASS-INFO` field allowlists (blocking overwrites of `type`, `name`, `dialer-proxy`, `interface-name`, `routing-mark`, etc.), support for both `node_password` and `node-password`, BaseN input validation, and per-provider isolation in `proxy-providers`.
 3. **Fixed `ninja` empty `password` fallback**: In `adapter/outbound/ninja.go`, fall back `Password` to `NodePassword` when `password` is omitted (fixes `TestNinjaOutboundEcho` and plain `node-password`-only configs).
 4. **Multi-platform CI & Releases**: Added `.github/workflows/build.yml` to run protocol/core tests and publish pre-built binaries (with `with_gvisor`) for Linux, macOS, Windows, Android (NDK), and FreeBSD.
 

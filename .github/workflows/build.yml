@@ -214,7 +214,7 @@ jobs:
             - Bettbox / FlClash core patches (restoring upstream `mieru` inbound `InUser` fix `#3236`)
             - `x365` outbound + share link converter
             - `miu` outbound, inbound listener, padding, and share link converter
-            - `ninja` outbound (plain config only, without subscription auto-deobfuscation, plus empty `password` fallback fix)
+            - `ninja` outbound (with empty `password` fallback fix and hardened `#!PASS-INFO` subscription deobfuscation supporting `proxy-providers` isolation)
 
             ### Credits & Acknowledgements
             - Upstream core: [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (GPL-3.0)
