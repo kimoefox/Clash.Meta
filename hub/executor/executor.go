@@ -114,7 +114,7 @@ func ApplyConfig(cfg *config.Config, force bool) {
 	initInnerTcp()
 	loadProvider(cfg.Providers)
 	updateProfile(cfg)
-	loadProvider(cfg.RuleProviders)
+	loadRuleProviders(cfg.RuleProviders)
 	runtime.GC()
 	tunnel.OnRunning()
 	updateUpdater(cfg)

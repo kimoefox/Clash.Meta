@@ -331,6 +331,11 @@ func (c *Client) closeIdle() {
 	}
 }
 
+// CloseIdle closes every idle pooled lane without closing the client itself.
+func (c *Client) CloseIdle() {
+	c.closeIdle()
+}
+
 // Close closes the idle lanes and makes the client refuse new streams. A stream in progress keeps
 // working; its lane is closed when the stream ends.
 func (c *Client) Close() error {

@@ -37,7 +37,7 @@ jobs:
         run: |
           go test -v -run '(?i)(x365|miu|ninja)' ./adapter/outbound/...
           go test -v -run '(?i)miu' ./listener/inbound/...
-          go test ./transport/x365/... ./transport/ninja/... ./transport/miu/... ./listener/sing_tun/... ./common/convert/... ./config/...
+          go test ./adapter ./adapter/outbound ./adapter/outboundgroup ./adapter/provider ./common/utils ./component/geodata/... ./dns ./hub/executor ./listener ./listener/sing_tun ./rules/provider ./transport/anytls/session ./transport/gun ./transport/x365 ./transport/ninja ./transport/miu ./common/convert ./config ./tunnel
 
   build:
     needs: [test]
@@ -211,7 +211,7 @@ jobs:
 
             ### Highlights
             - Merged latest [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (`Alpha`) and [AirportR/mihomo](https://github.com/AirportR/mihomo) (`Alpha`) with full upstream Git histories preserved
-            - Bettbox / FlClash core patches (restoring upstream `mieru` inbound `InUser` fix `#3236`)
+            - Full [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox) v1.20.0 power-saving & low-memory core patches (`CloseIdle` for Hysteria/Hysteria2/TUIC/gRPC/Miu, lazy AnyTLS cleanup, healthcheck dedup/reuse/batching, IPv6 UDP fast-reject, flat mmap GeoSite & rule-set caches, `runtime/metrics`, DoH3/DoQ recovery) + upstream `mieru` `#3236` fix preserved
             - `x365` outbound + share link converter
             - `miu` outbound, inbound listener, padding, and share link converter
             - `ninja` outbound (with empty `password` fallback fix and hardened `#!PASS-INFO` subscription deobfuscation supporting `proxy-providers` isolation)
@@ -219,7 +219,7 @@ jobs:
             ### Credits & Acknowledgements
             - Upstream core: [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (GPL-3.0)
             - Protocol integrations & Bettbox core patches: [AirportR/mihomo](https://github.com/AirportR/mihomo) (`AirportR`, `wangwei354`)
-            - Protocol & ecosystem upstreams: [MiuProtocol/Miu](https://github.com/MiuProtocol/Miu) (MIT), [SakurakaiCat/x365-core](https://github.com/SakurakaiCat/x365-core), Bettbox / FlClash
+            - Protocol & ecosystem upstreams: [MiuProtocol/Miu](https://github.com/MiuProtocol/Miu) (MIT), [SakurakaiCat/x365-core](https://github.com/SakurakaiCat/x365-core), [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox) v1.20.0
 
             > Unofficial personal build — please report build or runtime issues in this repository rather than upstream.
           files: |
