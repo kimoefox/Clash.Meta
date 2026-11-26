@@ -1114,6 +1114,25 @@ proxies: # socks5
       #   client-fingerprint: chrome
 
 
+  # iwan (Panabit iWAN SD-WAN L3 outbound)
+  - name: "iwan"
+    type: iwan
+    server: server
+    port: 443
+    username: myuser
+    password: mypassword
+    mtu: 1400
+    encrypt: false
+    # udp: true
+    # handshake-timeout: 6
+    # idle-timeout: 60 # 空闲自动断开停发 2s ECHO 心跳（0 表示保持常连）
+    # pipe-id: 0
+    # pipe-idx: 0
+    # ip-stack:
+    #   mode: mips # auto / mips / gvisor
+    # remote-dns-resolve: false
+    # dns: [1.1.1.1]
+
   # x365（仅支持 TCP）
   - name: "x365"
     type: x365

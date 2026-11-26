@@ -53,6 +53,9 @@ func (c *idleCloser) release() {
 		return
 	}
 	c.stopLocked()
+	if c.timeout <= 0 {
+		return
+	}
 	gen := c.gen
 	c.timer = time.AfterFunc(c.timeout, func() {
 		c.expire(gen)
@@ -210,5 +213,11 @@ func (t *Tuic) Close() error {
 func (m *Miu) CloseIdle() {
 	if m.client != nil {
 		m.client.CloseIdle()
+	}
+}
+
+func (i *Iwan) CloseIdle() {
+	if i.idle != nil {
+		i.idle.closeIdle()
 	}
 }

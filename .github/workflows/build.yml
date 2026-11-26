@@ -35,9 +35,9 @@ jobs:
 
       - name: Run protocol & patch unit tests
         run: |
-          go test -v -run '(?i)(x365|miu|ninja)' ./adapter/outbound/...
+          go test -v -run '(?i)(x365|miu|ninja|iwan)' ./adapter/outbound/...
           go test -v -run '(?i)miu' ./listener/inbound/...
-          go test ./adapter ./adapter/outbound ./adapter/outboundgroup ./adapter/provider ./common/utils ./component/geodata/... ./dns ./hub/executor ./listener ./listener/sing_tun ./rules/provider ./transport/anytls/session ./transport/gun ./transport/x365 ./transport/ninja ./transport/miu ./common/convert ./config ./tunnel
+          go test ./adapter ./adapter/outbound ./adapter/outboundgroup ./adapter/provider ./common/utils ./component/geodata/... ./dns ./hub/executor ./listener ./listener/sing_tun ./rules/provider ./transport/anytls/session ./transport/gun ./transport/x365 ./transport/ninja ./transport/miu ./transport/iwan ./common/convert ./config ./tunnel
 
   build:
     needs: [test]
@@ -215,11 +215,12 @@ jobs:
             - `x365` outbound + share link converter
             - `miu` outbound, inbound listener, padding, and share link converter
             - `ninja` outbound (with empty `password` fallback fix and hardened `#!PASS-INFO` subscription deobfuscation supporting `proxy-providers` isolation)
+            - `iwan` (Panabit iWAN SD-WAN) L3 outbound over userspace IP stack (`mipstack` / `gVisor`) with lazy connect, idle disconnect (`CloseIdle`), optional XOR encryption, `IPFRAG` reassembly, and `SEGRT` decrypt
 
             ### Credits & Acknowledgements
             - Upstream core: [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) (GPL-3.0)
             - Protocol integrations & Bettbox core patches: [AirportR/mihomo](https://github.com/AirportR/mihomo) (`AirportR`, `wangwei354`)
-            - Protocol & ecosystem upstreams: [MiuProtocol/Miu](https://github.com/MiuProtocol/Miu) (MIT), [SakurakaiCat/x365-core](https://github.com/SakurakaiCat/x365-core), [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox) v1.20.0
+            - Protocol & ecosystem upstreams: [MiuProtocol/Miu](https://github.com/MiuProtocol/Miu) (MIT), [SakurakaiCat/x365-core](https://github.com/SakurakaiCat/x365-core), [Ricky-Hao/iwand](https://github.com/Ricky-Hao/iwand), [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox) v1.20.0
 
             > Unofficial personal build — please report build or runtime issues in this repository rather than upstream.
           files: |

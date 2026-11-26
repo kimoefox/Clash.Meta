@@ -244,6 +244,13 @@ func ParseProxy(mapping map[string]any, options ...ProxyOption) (C.Proxy, error)
 			break
 		}
 		proxy, err = outbound.NewNinja(*ninjaOption)
+	case "iwan":
+		iwanOption := &outbound.IwanOption{BasicOption: basicOption}
+		err = decoder.Decode(mapping, iwanOption)
+		if err != nil {
+			break
+		}
+		proxy, err = outbound.NewIwan(*iwanOption)
 	default:
 		return nil, fmt.Errorf("unsupport proxy type: %s", proxyType)
 	}

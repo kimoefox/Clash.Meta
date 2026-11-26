@@ -58,6 +58,7 @@ const (
 	X365
 	Miu
 	Ninja
+	Iwan
 )
 
 const (
@@ -252,6 +253,8 @@ func (at AdapterType) String() string {
 		return "Miu"
 	case Ninja:
 		return "Ninja"
+	case Iwan:
+		return "Iwan"
 	case Relay:
 		return "Relay"
 	case Selector:
